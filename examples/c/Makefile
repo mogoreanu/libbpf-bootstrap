@@ -17,10 +17,11 @@ ARCH ?= $(shell uname -m | sed 's/x86_64/x86/' \
 			 | sed 's/riscv64/riscv/' \
 			 | sed 's/loongarch64/loongarch/')
 VMLINUX := ../../vmlinux.h/include/$(ARCH)/vmlinux.h
+NVME_CORE := ./nvme_core.h
 # Use our own libbpf API headers and Linux UAPI headers distributed with
 # libbpf to avoid dependency on system-wide headers, which could be missing or
 # outdated
-INCLUDES := -I$(OUTPUT) -I../../libbpf/include/uapi -I$(dir $(VMLINUX)) -I$(LIBBLAZESYM_INC)
+INCLUDES := -I$(OUTPUT) -I../../libbpf/include/uapi -I$(dir $(VMLINUX)) -I$(dir $(NVME_CORE)) -I$(LIBBLAZESYM_INC)
 CFLAGS := -g -Wall
 ALL_LDFLAGS := $(LDFLAGS) $(EXTRA_LDFLAGS)
 
@@ -103,7 +104,7 @@ $(LIBBLAZESYM_OBJ): $(LIBBLAZESYM_SRC)/target/release/libblazesym_c.a | $(OUTPUT
 	$(Q)cp $(LIBBLAZESYM_SRC)/target/release/libblazesym_c.a $@
 
 # Build BPF code
-$(OUTPUT)/%.bpf.o: %.bpf.c $(LIBBPF_OBJ) $(wildcard %.h) $(VMLINUX) | $(OUTPUT) $(BPFTOOL)
+$(OUTPUT)/%.bpf.o: %.bpf.c $(LIBBPF_OBJ) $(wildcard %.h) $(VMLINUX) $(NVME_CORE) | $(OUTPUT) $(BPFTOOL)
 	$(call msg,BPF,$@)
 	$(Q)$(CLANG) -g -O2 -target bpf -D__TARGET_ARCH_$(ARCH)		      \
 		     $(INCLUDES) $(CLANG_BPF_SYS_INCLUDES)		      \
