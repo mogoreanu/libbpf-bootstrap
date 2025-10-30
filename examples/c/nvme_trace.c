@@ -25,11 +25,34 @@ static int libbpf_print_fn(enum libbpf_print_level level, const char* format,
 
 static int handle_nvme_event(void* ctx, void* data, size_t data_sz) {
   const struct nvme_trace_event* my_nvme_event = data;
+  if (data_sz < sizeof(struct nvme_trace_event)) {
+    return -1;
+  }
 
-  if (my_nvme_event->action == 0) {
-    printf("Starting cid=%d\n", my_nvme_event->cid);
+  if (my_nvme_event->action == kActionTypeSubmit) {
+    if (data_sz < sizeof(struct nvme_submit_trace_event)) {
+      return -1;
+    }
+    const struct nvme_submit_trace_event* se = data;
+    // printf("Starting cid=%d\n", se->cid);
+    printf(
+        "Submit nvme%d: qid=%d, cmdid=%u, nsid=%u, flags=0x%x, meta=0x%x, opcode=%d\n",
+        se->ctrl_id, se->qid, se->cid, se->nsid, se->flags, se->metadata,
+        se->opcode);
+
+  } else if (my_nvme_event->action == kActionTypeComplete) {
+    if (data_sz < sizeof(struct nvme_complete_trace_event)) {
+      return -1;
+    }
+    const struct nvme_complete_trace_event* ce = data;
+    // printf("Completing cid=%d\n", ce->cid);
+    printf(
+        "Complete nvme%d: qid=%d, cmdid=%u, res=%#llx, retries=%u, flags=0x%x, "
+        "status=%#x\n",
+        ce->ctrl_id, ce->qid, ce->cid, ce->result, ce->retries, ce->flags,
+        ce->status);
+
   } else {
-    printf("Completing cid=%d\n", my_nvme_event->cid);
   }
 
   return 0;

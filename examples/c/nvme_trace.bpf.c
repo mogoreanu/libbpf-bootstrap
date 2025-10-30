@@ -48,15 +48,24 @@ int handle_nvme_setup_cmd(struct trace_event_raw_nvme_setup_cmd* ctx) {
   // bpf_printk("nvme_setup_cmd: PID %d, qid=%d, cid=%d, opcode=0x%x\n",
   //            bpf_get_current_pid_tgid() >> 32, ctx->qid, ctx->cid,
   //            ctx->opcode);
-  struct nvme_trace_event* my_nvme_event;
-  my_nvme_event =
-      bpf_ringbuf_reserve(&nvme_trace_events, sizeof(*my_nvme_event), 0);
-  if (!my_nvme_event) return 0;
+  struct nvme_submit_trace_event* e;
+  e = bpf_ringbuf_reserve(&nvme_trace_events, sizeof(*e), 0);
+  if (!e) return 0;
 
-  my_nvme_event->action = 0;
-  my_nvme_event->cid = ctx->cid;
+  e->action = kActionTypeSubmit;
+	e->ctrl_id = ctx->ctrl_id;
+	e->qid = ctx->qid;
+	e->opcode = ctx->opcode;
+	e->flags = ctx->flags;
+	e->cid = ctx->cid;
+	e->nsid = ctx->nsid;
+	e->metadata = ctx->metadata;
+	e->fctype = ctx->fctype;
+	// Copying string doesn't quite work yet.
+	// bpf_probe_read_str(e->disk, sizeof(e->disk), ctx->disk);
+	// bpf_probe_read(e->cdw10, sizeof(ctx->cdw10), ctx->cdw10);
 
-  bpf_ringbuf_submit(my_nvme_event, 0);
+  bpf_ringbuf_submit(e, 0);
   return 0;
 }
 
@@ -89,14 +98,20 @@ int handle_nvme_complete_rq(struct trace_event_raw_nvme_complete_rq* ctx) {
   // bpf_printk("nvme_complete_rq: PID %d, disk=%s, qid=%d, cid=%d\n",
   //            bpf_get_current_pid_tgid() >> 32, ctx->disk, ctx->qid,
   //            ctx->cid);
-  struct nvme_trace_event* my_nvme_event;
-  my_nvme_event =
-      bpf_ringbuf_reserve(&nvme_trace_events, sizeof(*my_nvme_event), 0);
-  if (!my_nvme_event) return 0;
+  struct nvme_complete_trace_event* e;
+  e = bpf_ringbuf_reserve(&nvme_trace_events, sizeof(*e), 0);
+  if (!e) return 0;
 
-  my_nvme_event->action = 1;
-  my_nvme_event->cid = ctx->cid;
+  e->action = kActionTypeComplete;
+	// bpf_probe_read_str(e->disk, sizeof(e->disk), ctx->disk);
+	e->ctrl_id = ctx->ctrl_id;
+	e->qid = ctx->qid;
+  e->cid = ctx->cid;
+	e->result = ctx->result;
+	e->retries = ctx->retries;
+	e->flags = ctx->flags;
+	e->status = ctx->status;
 
-  bpf_ringbuf_submit(my_nvme_event, 0);
+  bpf_ringbuf_submit(e, 0);
   return 0;
 }
