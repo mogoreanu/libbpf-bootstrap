@@ -1,3 +1,4 @@
+// vmlinux overlaps with nvme_core which we need for nvme trace data structures
 // #include "vmlinux.h"
 #include "nvme_core.h"
 
@@ -9,8 +10,8 @@
 char LICENSE[] SEC("license") = "Apache";
 
 struct {
-	__uint(type, BPF_MAP_TYPE_RINGBUF);
-	__uint(max_entries, 256 * 1024);
+  __uint(type, BPF_MAP_TYPE_RINGBUF);
+  __uint(max_entries, 256 * 1024);
 } nvme_trace_events SEC(".maps");
 
 
@@ -48,8 +49,8 @@ int handle_nvme_setup_cmd(struct trace_event_raw_nvme_setup_cmd* ctx) {
   //            bpf_get_current_pid_tgid() >> 32, ctx->qid, ctx->cid, ctx->opcode);
   struct nvme_trace_event* my_nvme_event;
   my_nvme_event = bpf_ringbuf_reserve(&nvme_trace_events, sizeof(*my_nvme_event), 0);
-	if (!my_nvme_event)
-		return 0;
+  if (!my_nvme_event)
+    return 0;
 
   my_nvme_event->action = 0;
   my_nvme_event->cid = ctx->cid;
@@ -88,8 +89,8 @@ int handle_nvme_complete_rq(struct trace_event_raw_nvme_complete_rq* ctx) {
   //            bpf_get_current_pid_tgid() >> 32, ctx->disk, ctx->qid, ctx->cid);
   struct nvme_trace_event* my_nvme_event;
   my_nvme_event = bpf_ringbuf_reserve(&nvme_trace_events, sizeof(*my_nvme_event), 0);
-	if (!my_nvme_event)
-		return 0;
+  if (!my_nvme_event)
+    return 0;
 
   my_nvme_event->action = 1;
   my_nvme_event->cid = ctx->cid;

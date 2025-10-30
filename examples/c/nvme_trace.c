@@ -13,18 +13,17 @@ make nvme_trace
 sudo ./nvme_trace
 */
 
-static int libbpf_print_fn(enum libbpf_print_level level, const char *format, va_list args)
-{
-  return vfprintf(stderr, format, args);
-}
-
 static volatile bool exiting = false;
 static void sig_handler(int sig) {
   exiting = true;
 }
 
-static int handle_nvme_event(void *ctx, void *data, size_t data_sz)
-{
+static int libbpf_print_fn(enum libbpf_print_level level, const char *format,
+                           va_list args) {
+  return vfprintf(stderr, format, args);
+}
+
+static int handle_nvme_event(void *ctx, void *data, size_t data_sz) {
   const struct nvme_trace_event* my_nvme_event = data;
 
   if (my_nvme_event->action == 0) {
