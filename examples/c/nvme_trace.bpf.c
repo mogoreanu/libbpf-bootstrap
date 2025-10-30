@@ -1,11 +1,12 @@
 // vmlinux overlaps with nvme_core which we need for nvme trace data structures
 // #include "vmlinux.h"
+// clang-format off
 #include "nvme_core.h"
+// clang-format on
+#include "nvme_trace.h"
 
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
-#include "nvme_trace.h"
-
 
 char LICENSE[] SEC("license") = "Apache";
 
@@ -13,7 +14,6 @@ struct {
   __uint(type, BPF_MAP_TYPE_RINGBUF);
   __uint(max_entries, 256 * 1024);
 } nvme_trace_events SEC(".maps");
-
 
 // clang-format off
 /*
@@ -46,11 +46,12 @@ print fmt: "nvme%d: %sqid=%d, cmdid=%u, nsid=%u, flags=0x%x, meta=0x%x, cmd=(%s 
 SEC("tp/nvme/nvme_setup_cmd")
 int handle_nvme_setup_cmd(struct trace_event_raw_nvme_setup_cmd* ctx) {
   // bpf_printk("nvme_setup_cmd: PID %d, qid=%d, cid=%d, opcode=0x%x\n",
-  //            bpf_get_current_pid_tgid() >> 32, ctx->qid, ctx->cid, ctx->opcode);
+  //            bpf_get_current_pid_tgid() >> 32, ctx->qid, ctx->cid,
+  //            ctx->opcode);
   struct nvme_trace_event* my_nvme_event;
-  my_nvme_event = bpf_ringbuf_reserve(&nvme_trace_events, sizeof(*my_nvme_event), 0);
-  if (!my_nvme_event)
-    return 0;
+  my_nvme_event =
+      bpf_ringbuf_reserve(&nvme_trace_events, sizeof(*my_nvme_event), 0);
+  if (!my_nvme_event) return 0;
 
   my_nvme_event->action = 0;
   my_nvme_event->cid = ctx->cid;
@@ -86,11 +87,12 @@ print fmt: "nvme%d: %sqid=%d, cmdid=%u, res=%#llx, retries=%u, flags=0x%x, statu
 SEC("tp/nvme/nvme_complete_rq")
 int handle_nvme_complete_rq(struct trace_event_raw_nvme_complete_rq* ctx) {
   // bpf_printk("nvme_complete_rq: PID %d, disk=%s, qid=%d, cid=%d\n",
-  //            bpf_get_current_pid_tgid() >> 32, ctx->disk, ctx->qid, ctx->cid);
+  //            bpf_get_current_pid_tgid() >> 32, ctx->disk, ctx->qid,
+  //            ctx->cid);
   struct nvme_trace_event* my_nvme_event;
-  my_nvme_event = bpf_ringbuf_reserve(&nvme_trace_events, sizeof(*my_nvme_event), 0);
-  if (!my_nvme_event)
-    return 0;
+  my_nvme_event =
+      bpf_ringbuf_reserve(&nvme_trace_events, sizeof(*my_nvme_event), 0);
+  if (!my_nvme_event) return 0;
 
   my_nvme_event->action = 1;
   my_nvme_event->cid = ctx->cid;

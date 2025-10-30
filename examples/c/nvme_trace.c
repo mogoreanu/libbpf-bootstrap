@@ -1,11 +1,13 @@
+#include "nvme_trace.h"
+
 #include <argp.h>
+#include <bpf/libbpf.h>
 #include <signal.h>
 #include <stdio.h>
-#include <time.h>
 #include <sys/resource.h>
-#include <bpf/libbpf.h>
+#include <time.h>
 #include <unistd.h>
-#include "nvme_trace.h"
+
 #include "nvme_trace.skel.h"
 
 /*
@@ -14,16 +16,14 @@ sudo ./nvme_trace
 */
 
 static volatile bool exiting = false;
-static void sig_handler(int sig) {
-  exiting = true;
-}
+static void sig_handler(int sig) { exiting = true; }
 
-static int libbpf_print_fn(enum libbpf_print_level level, const char *format,
+static int libbpf_print_fn(enum libbpf_print_level level, const char* format,
                            va_list args) {
   return vfprintf(stderr, format, args);
 }
 
-static int handle_nvme_event(void *ctx, void *data, size_t data_sz) {
+static int handle_nvme_event(void* ctx, void* data, size_t data_sz) {
   const struct nvme_trace_event* my_nvme_event = data;
 
   if (my_nvme_event->action == 0) {
@@ -35,9 +35,9 @@ static int handle_nvme_event(void *ctx, void *data, size_t data_sz) {
   return 0;
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   struct ring_buffer* nvme_trace_events = NULL;
-  struct nvme_trace_bpf *skel;
+  struct nvme_trace_bpf* skel;
   int err;
 
   libbpf_set_print(libbpf_print_fn);
@@ -64,7 +64,8 @@ int main(int argc, char **argv) {
   }
 
   /* Set up ring buffer polling */
-  nvme_trace_events = ring_buffer__new(bpf_map__fd(skel->maps.nvme_trace_events), handle_nvme_event, NULL, NULL);
+  nvme_trace_events = ring_buffer__new(
+      bpf_map__fd(skel->maps.nvme_trace_events), handle_nvme_event, NULL, NULL);
   if (!nvme_trace_events) {
     err = -1;
     fprintf(stderr, "Failed to create ring buffer\n");
