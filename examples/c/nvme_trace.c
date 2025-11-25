@@ -34,9 +34,9 @@ static int handle_nvme_event(void* ctx, void* data, size_t data_sz) {
       return -1;
     }
     const struct nvme_submit_trace_event* se = data;
-    // printf("Starting cid=%d\n", se->cid);
     printf(
-        "Submit nvme%d: qid=%d, cmdid=%u, nsid=%u, flags=0x%x, meta=0x%x, opcode=%d\n",
+        "Submit nvme%d: qid=%d, cmdid=%u, nsid=%u, flags=0x%x, meta=0x%x, "
+        "opcode=%d\n",
         se->ctrl_id, se->qid, se->cid, se->nsid, se->flags, se->metadata,
         se->opcode);
 
@@ -45,7 +45,6 @@ static int handle_nvme_event(void* ctx, void* data, size_t data_sz) {
       return -1;
     }
     const struct nvme_complete_trace_event* ce = data;
-    // printf("Completing cid=%d\n", ce->cid);
     printf(
         "Complete nvme%d: qid=%d, cmdid=%u, res=%#llx, retries=%u, flags=0x%x, "
         "status=%#x\n",
@@ -53,6 +52,7 @@ static int handle_nvme_event(void* ctx, void* data, size_t data_sz) {
         ce->status);
 
   } else {
+    printf("Unknown nvme event type: %d\n", my_nvme_event->action);
   }
 
   return 0;
@@ -87,8 +87,9 @@ int main(int argc, char** argv) {
   }
 
   /* Set up ring buffer polling */
-  nvme_trace_events = ring_buffer__new(
-      bpf_map__fd(skel->maps.nvme_trace_events), handle_nvme_event, NULL, NULL);
+  nvme_trace_events =
+      ring_buffer__new(bpf_map__fd(skel->maps.nvme_trace_events),
+                       handle_nvme_event, /*ctx=*/NULL, /*opts=*/NULL);
   if (!nvme_trace_events) {
     err = -1;
     fprintf(stderr, "Failed to create ring buffer\n");
